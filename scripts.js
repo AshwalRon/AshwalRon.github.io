@@ -119,7 +119,7 @@ if (currentSchedule.length === 0) return;
 
 // Format schedule as text
 const scheduleText = currentSchedule.map(shift => 
-`${shift.shift} - ${shift.soldier}`
+`${shift.soldier} - ${shift.shift}`
 ).join('\n');
 
 // Copy to clipboard
