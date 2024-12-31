@@ -15,6 +15,7 @@
                 <div class="group-header">
                     <input type="checkbox" id="groupA" checked>
                     <label for="groupA">כיתה א</label>
+                    <l>5</l>
                 </div>
             </div>
             
@@ -22,6 +23,7 @@
                 <div class="group-header">
                     <input type="checkbox" id="groupB" checked>
                     <label for="groupB">כיתה ב</label>
+                    <l>5</l>
                 </div>
             </div>
             
@@ -29,6 +31,7 @@
                 <div class="group-header">
                     <input type="checkbox" id="groupC" checked>
                     <label for="groupC">כיתה ג</label>
+                    <l>7</l>
                 </div>
             </div>
             <label>
@@ -36,7 +39,11 @@
                 אנחנו מתחילים ?
             </label>
             <label>
-            <input type="checkbox" id="garbish" checked>
+            <input type="checkbox" id="alone" unchecked>
+                רק הצוות ?
+            </label>
+            <label>
+            <input type="checkbox" id="gar" checked>
                 לדפוק את רזיאל?
             </label>
         </div>
@@ -53,8 +60,8 @@
             </div>
             
             <div class="input-group">
-                <label for="hoursPerShift">Minutes per Shift</label>
-                <input type="number" id="hoursPerShift" min="0" max="12" value="30">
+                <label for="amount">Amount of soldiers</label>
+                <input type="number" id="amount" min="0" max="12" value="12">
             </div>
         </div>
 
@@ -65,7 +72,7 @@
             </button>
         </div>
         <div id="toast" class="toast">copied!</div>
-
+        <div id="perShift"></div>
         <div id="schedule"></div>
     </div>
 

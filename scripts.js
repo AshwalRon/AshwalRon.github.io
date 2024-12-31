@@ -42,8 +42,9 @@ let currentSchedule = []; // Add this at the top with your other variables
 function generateSchedule() {
 const startTime = document.getElementById('startTime').value;
 const endTime = document.getElementById('endTime').value;
-const hoursPerShift = parseInt(document.getElementById('hoursPerShift').value);
+const amount = parseInt(document.getElementById('amount').value);
 const startOption = document.getElementById('start').checked;
+const onlyUs = document.getElementById('alone').checked;
 // Get selected groups
 const selectedGroups = ['A', 'B', 'C']
 .filter(group => document.getElementById(`group${group}`).checked)
@@ -55,7 +56,11 @@ groups[groupName].map(soldier => ({ name: soldier, group: groupName }))
 );
 
 const totalMinutes = calculateTotalMinutes(startTime, endTime);
-const shiftMinutes = hoursPerShift;
+console.log(totalMinutes);
+const shiftMinutesPer = totalMinutes / amount;
+const shiftCal = Math.ceil(shiftMinutesPer/5)
+console.log(shiftCal * 5 , Math.ceil(10.1))
+const shiftMinutes = shiftCal * 5;
 const numberOfShifts = Math.ceil(totalMinutes / shiftMinutes);
 
 // Shuffle soldiers for random assignment
@@ -68,52 +73,53 @@ let numOfEmpty = numberOfShifts - availableSoldiers.length;
 let flag = startOption;
 
 for (let i = 0; i < numberOfShifts; i++) {
-const shiftEndMinutes = Math.min(currentMinutes + shiftMinutes, parseTime(startTime) + totalMinutes);
-const soldier = shuffledSoldiers[i % shuffledSoldiers.length];
-if (!flag){
-    currentSchedule.push({
-    shift: `${formatTime(currentMinutes)} - ${formatTime(shiftEndMinutes)}`,
-    soldier: '-',
-});
-    numOfEmpty--;
+    const shiftEndMinutes = Math.min(currentMinutes + shiftMinutes, parseTime(startTime) + totalMinutes);
+    const soldier = shuffledSoldiers[i % shuffledSoldiers.length];
+    if (!flag && !onlyUs){
+        currentSchedule.push({
+        shift: `${formatTime(shiftEndMinutes)} - ${formatTime(currentMinutes)}`,
+        soldier: '-',});
+        numOfEmpty--;
     }
-else{
-    if(soldier.name in nameDict){
-    soldier.name = '-';
-}
-    nameDict[soldier.name] = i;
-currentSchedule.push({
-    shift: `${formatTime(currentMinutes)} - ${formatTime(shiftEndMinutes)}`,
-    soldier: soldier.name,
-});
-}
+    else if(flag){
+        if(!onlyUs && soldier.name in nameDict){
+        soldier.name = '-';
+        }
+        nameDict[soldier.name] = i;
+        currentSchedule.push({
+        shift: `${formatTime(shiftEndMinutes)} - ${formatTime(currentMinutes)}`,
+        soldier: soldier.name,});
+    }
 
-if (!numOfEmpty) {
-    flag = true;
-}
+    if (numOfEmpty == 0) {
+        flag = true;
+    }
 
-currentMinutes = shiftEndMinutes;
-}
-console.log(nameDict);
-// Display schedule
-const scheduleDiv = document.getElementById('schedule');
-scheduleDiv.innerHTML = '<h2>Generated Schedule</h2>';
+    currentMinutes = shiftEndMinutes;
+    }
 
-currentSchedule.forEach(shift => {
-scheduleDiv.innerHTML += `
-    <div class="shift">
-        <div class="shift-header">
-            <span>${shift.shift}</span>
+    const shiftDiv = document.getElementById('perShift');
+    shiftDiv.innerHTML = `<li>${shiftMinutes} minutes per shift</li>`;
+
+    // Display schedule
+    const scheduleDiv = document.getElementById('schedule');
+    scheduleDiv.innerHTML = '<h2>Generated Schedule</h2>';
+
+    currentSchedule.forEach(shift => {
+    scheduleDiv.innerHTML += `
+        <div class="shift">
+            <div class="shift-header">
+                <span>${shift.shift}</span>
+            </div>
+            <div>${shift.soldier}</div>
         </div>
-        <div>${shift.soldier}</div>
-    </div>
-`;
-});
+    `;
+    });
 
-// Show copy button
-document.getElementById('copyButton').style.display = 'inline-block';
+    // Show copy button
+    document.getElementById('copyButton').style.display = 'inline-block';
 }
-
+nameDict = {}
 function copySchedule() {
 if (currentSchedule.length === 0) return;
 
