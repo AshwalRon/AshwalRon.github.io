@@ -19,6 +19,11 @@ body {
   text-decoration: none;
   border-radius: 5px;
 }
+.download-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  color: #666;
+}
 
 .download-btn:hover {
   background-color: #0056b3;
