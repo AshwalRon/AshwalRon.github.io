@@ -5,12 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Free Download Page</title>
   <link rel="stylesheet" href="styles.css" />
+
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-YGD4NK4JE0"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-YGD4NK4JE0');
+  </script>
 </head>
 <body>
   <div class="container">
     <h1>Welcome to My Download Page</h1>
     <p>Click the button below to download your free file:</p>
-    <a href="files/keyboard_switcher.7z" download class="download-btn">Download MyTool (.zip)</a>
+    
+    <!-- Direct download (no tracking) -->
+    <a href="files/keyboard_switcher.7z" download class="download-btn">Direct Download (.7z)</a>
   </div>
   <script src="scripts.js"></script>
 </body>
