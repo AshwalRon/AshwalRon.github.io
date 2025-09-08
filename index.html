@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fringero Shift Scheduler</title>
+    <link href="style.css" rel="stylesheet" />
+</head>
+<body>
+    <div class="container">
+        <h1>Fringero Shift Scheduler</h1>
+        
+        <div class="groups">
+            <div class="group">
+                <div class="group-header">
+                    <input type="checkbox" id="groupA" checked>
+                    <label for="groupA">כיתה א</label>
+                    <l>5</l>
+                </div>
+            </div>
+            
+            <div class="group">
+                <div class="group-header">
+                    <input type="checkbox" id="groupB" checked>
+                    <label for="groupB">כיתה ב</label>
+                    <l>5</l>
+                </div>
+            </div>
+            
+            <div class="group">
+                <div class="group-header">
+                    <input type="checkbox" id="groupC" checked>
+                    <label for="groupC">כיתה ג</label>
+                    <l>7</l>
+                </div>
+            </div>
+            <label>
+                <input type="checkbox" id="start" checked>
+                אנחנו מתחילים ?
+            </label>
+            <label>
+            <input type="checkbox" id="alone" unchecked>
+                רק הצוות ?
+            </label>
+            <label>
+            <input type="checkbox" id="gar" checked>
+                לדפוק את רזיאל?
+            </label>
+        </div>
+
+        <div class="inputs">
+            <div class="input-group">
+                <label for="startTime">Start Time</label>
+                <input type="time" id="startTime" value="22:00">
+            </div>
+            
+            <div class="input-group">
+                <label for="endTime">End Time</label>
+                <input type="time" id="endTime" value="09:00">
+            </div>
+            
+            <div class="input-group">
+                <label for="amount">Amount of soldiers</label>
+                <input type="number" id="amount" min="0" max="12" value="12">
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button onclick="generateSchedule()">Generate Schedule</button>
+            <button id="copyButton" class="copy-button" onclick="copySchedule()" style="display: none;">
+                Copy Schedule
+            </button>
+        </div>
+        <div id="toast" class="toast">copied!</div>
+        <div id="perShift"></div>
+        <div id="schedule"></div>
+    </div>
+
+    <script src="scripts.js"></script>
+</body>
+</html>
