@@ -1,99 +1,59 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="he" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fringero Shift Scheduler</title>
-    <link href="style.css" rel="stylesheet" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>זמינות צוות – לפי קבוצות וגיליון</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <div class="container">
-        <h1>Fringero Shift Scheduler</h1>
-        
-        <div class="groups">
-            <div class="group">
-                <div class="group-header">
-                    <input type="checkbox" id="groupA" checked>
-                    <label for="groupA">כיתה א</label>
-                    <l>5</l>
-                </div>
-            </div>
-            
-            <div class="group">
-                <div class="group-header">
-                    <input type="checkbox" id="groupB" checked>
-                    <label for="groupB">כיתה ב</label>
-                    <l>5</l>
-                </div>
-            </div>
-            
-            <div class="group">
-                <div class="group-header">
-                    <input type="checkbox" id="groupC" checked>
-                    <label for="groupC">כיתה ג</label>
-                    <l>7</l>
-                </div>
-            </div>
-            <label>
-                <input type="checkbox" id="start" checked>
-                אנחנו מתחילים ?
-            </label>
-            <label>
-            <input type="checkbox" id="alone" unchecked>
-                רק הצוות ?
-            </label>
-            <label>
-            <input type="checkbox" id="gar" checked>
-                לדפוק את רזיאל?
-            </label>
-        </div>
 
-        <div class="inputs">
-            <div class="input-group">
-                <label for="startTime">Start Time</label>
-                <input type="time" id="startTime" value="22:00">
-            </div>
-            
-            <div class="input-group">
-                <label for="endTime">End Time</label>
-                <input type="time" id="endTime" value="09:00">
-            </div>
-            
-            <div class="input-group">
-                <label for="amount">Amount of soldiers</label>
-                <input type="number" id="amount" min="0" max="12" value="12">
-            </div>
-        </div>
-        <div class="inputs">
-<section id="availabilityPanel" dir="rtl" style="margin-block:16px;">
-  <h2>זמינות להיום – <span id="availabilityDate"></span></h2>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-    <div>
-      <h3>זמינים</h3>
-      <ul id="availableList"></ul>
-    </div>
-    <div>
-      <h3>לא זמינים</h3>
-      <ul id="unavailableList"></ul>
-    </div>
-  </div>
-</section>
+  <header class="container">
+    <h1>זמינות צוות</h1>
+    <p class="muted">התאריך: <span id="todayLabel">—</span></p>
+  </header>
 
+  <main class="container">
 
-        <div class="button-group">
-            <button onclick="generateSchedule()">Generate Schedule</button>
-            <button id="copyButton" class="copy-button" onclick="copySchedule()" style="display: none;">
-                Copy Schedule
-            </button>
-        </div>
-        <div id="toast" class="toast">copied!</div>
-        <div id="perShift"></div>
-        <div id="schedule"></div>
-    </div>
+    <!-- בחירת קבוצות -->
+    <section class="card">
+      <div class="card-header">
+        <h2>בחירת קבוצות</h2>
+        <button id="refreshBtn" type="button" class="btn">רענן זמינות</button>
+      </div>
+      <div id="groupsContainer" class="chips"></div>
+      <p class="note">טיפ: ודא ששמות החיילים בקבוצות זהים לשמות בגיליון (אות-באות).</p>
+    </section>
 
-    <script src="scripts.js"></script>
+    <!-- סטטוס זמינות (ממקור הגיליון) -->
+    <section class="grid">
+      <div class="card">
+        <h3>רשימת החיילים לפי קבוצות שנבחרו</h3>
+        <ul id="rosterList" class="list"></ul>
+      </div>
+
+      <div class="card">
+        <h3>זמינים היום</h3>
+        <ul id="availableList" class="list ok"></ul>
+      </div>
+
+      <div class="card">
+        <h3>לא זמינים היום</h3>
+        <ul id="unavailableList" class="list warn"></ul>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>מצב טעינה</h3>
+      <pre id="statusBox" class="status">מוכן.</pre>
+    </section>
+
+  </main>
+
+  <footer class="container muted">
+    <small>הנתונים נטענים מ-Google Sheets על בסיס תאריך היום. אין צורך להזין קישור/תאריך.</small>
+  </footer>
+
+  <script src="scripts.js"></script>
 </body>
-
 </html>
-
-
