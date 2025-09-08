@@ -65,24 +65,8 @@
             </div>
         </div>
         <div class="inputs">
-  <div class="input-group">
-    <label for="availDate">תאריך לבדיקה (dd/mm/yyyy)</label>
-    <input type="text" id="availDate" placeholder="08/09/2025">
-  </div>
-
-  <div class="input-group">
-    <label for="csvUrl">קישור CSV של הגיליון</label>
-    <input type="url" id="csvUrl" placeholder="https://docs.google.com/spreadsheets/d/1NnKw1bWpokAA8Qq-0D9r_Sp1o9jcF-EwQhi8sJvIHJw/edit?usp=sharing">
-  </div>
-
-  <div class="input-group">
-    <label>&nbsp;</label>
-    <button type="button" onclick="loadAvailability()">טען זמינות</button>
-  </div>
-</div>
-
-<div id="availabilityPanel">
-  <h2>זמינות לצוות</h2>
+<section id="availabilityPanel" dir="rtl" style="margin-block:16px;">
+  <h2>זמינות להיום – <span id="availabilityDate"></span></h2>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
     <div>
       <h3>זמינים</h3>
@@ -93,7 +77,8 @@
       <ul id="unavailableList"></ul>
     </div>
   </div>
-</div>
+</section>
+
 
         <div class="button-group">
             <button onclick="generateSchedule()">Generate Schedule</button>
@@ -110,4 +95,5 @@
 </body>
 
 </html>
+
 
