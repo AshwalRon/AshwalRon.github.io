@@ -1,256 +1,319 @@
-const groups = {
-    groupA: ['וילנר', 'עומרי', 'אנדי' , "גירו", "סינגל"],
-    groupB: ['אביאל', 'רזיאל', 'דרור' , "קראוס" , "רהב"],
-    groupC: ['גד', 'שושו', 'סבתא' ,"פורר" , "אדיר" , "עמור" , "שיאון"],
+/********************************************************************
+ * זמינות צוות – טעינה מהגיליון שלך + סינון לפי groups
+ * ללא שדות קלט. התאריך = היום. הקישור קבוע לפי ה-sheet id.
+ *
+ * דרישות שיתוף בגיליון:
+ * 1) שם הלשונית: Calander (עדכן SHEET_TAB אם שונה).
+ * 2) שורת כותרת (שורה 1) מכילה תאריכים בפורמט dd/mm/yy או dd/mm/yyyy
+ *    לדוגמה: 8/9/25 או 08/09/2025.
+ * 3) עמודה A מכילה שמות (A2..).
+ * 4) ריק = זמין; כל טקסט = לא זמין (הטקסט יוצג כהערה).
+ * 5) שיתוף "Anyone with the link – Viewer" כדי ש-fetch יעבוד.
+ *******************************************************************/
+
+/** מזהי הגיליון */
+const SHEET_ID  = '1NnKw1bWpokAA8Qq-0D9r_Sp1o9jcF-EwQhi8sJvIHJw';
+const SHEET_TAB = 'Calander'; // אם שונה אצלך, עדכן כאן
+
+/** בניית כתובת CSV דרך gviz */
+const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_TAB)}`;
+
+/** הגדרת הקבוצות -> רשימת חיילים (ערוך לפי הצורך) */
+const GROUPS = {
+  "Core":   ["יואב", "אריאל", "אדיר", "שיר", "אור"],
+  "Ops":    ["נועם", "עידו", "שקד"],
+  "QA":     ["רון", "ליאור"],
+  // הוסף/הסר קבוצות וחיילים כפי שמתאים לך
 };
 
-function parseTime(timeStr) {
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    return hours * 60 + minutes;
-}
+/** מצב גלובלי */
+const state = {
+  today: normalizeDateOnly(new Date()),
+  availabilityLoaded: false,
+  availableSet: new Set(),            // שמות זמינים מהגיליון
+  unavailableMap: new Map(),          // שם -> הערה
+  selectedGroups: new Set(Object.keys(GROUPS)), // כברירת מחדל: כל הקבוצות מסומנות
+};
 
-function formatTime(minutes) {
-    const hours = Math.floor(minutes / 60) % 24;
-    const mins = minutes % 60;
-    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-}
+/** DOM refs */
+const el = {};
+document.addEventListener('DOMContentLoaded', () => {
+  el.todayLabel      = document.getElementById('todayLabel');
+  el.groupsContainer = document.getElementById('groupsContainer');
+  el.refreshBtn      = document.getElementById('refreshBtn');
+  el.rosterList      = document.getElementById('rosterList');
+  el.availableList   = document.getElementById('availableList');
+  el.unavailableList = document.getElementById('unavailableList');
+  el.statusBox       = document.getElementById('statusBox');
 
-function calculateTotalMinutes(start, end) {
-    let startMins = parseTime(start);
-    let endMins = parseTime(end);
-    
-    if (endMins <= startMins) {
-        endMins += 24 * 60; // Add 24 hours if end time is on next day
-    }
-    
-    return endMins - startMins;
-}
+  // הצג היום
+  el.todayLabel.textContent = formatDateIL(state.today);
 
-function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-}
+  // רנדר קבוצות (צ'קבוקסים)
+  renderGroups();
 
+  // האזנה לרענון כפוי
+  el.refreshBtn.addEventListener('click', () => {
+    loadAvailabilityForToday(true);
+  });
 
-let currentSchedule = []; // Add this at the top with your other variables
-
-// Your existing functions remain the same until generateSchedule
-
-function generateSchedule() {
-const startTime = document.getElementById('startTime').value;
-const endTime = document.getElementById('endTime').value;
-const amount = parseInt(document.getElementById('amount').value);
-const startOption = document.getElementById('start').checked;
-const onlyUs = document.getElementById('alone').checked;
-// Get selected groups
-const selectedGroups = ['A', 'B', 'C']
-.filter(group => document.getElementById(`group${group}`).checked)
-.map(group => `group${group}`);
-
-// Get available soldiers from selected groups
-const availableSoldiers = selectedGroups.flatMap(groupName => 
-groups[groupName].map(soldier => ({ name: soldier, group: groupName }))
-);
-
-const totalMinutes = calculateTotalMinutes(startTime, endTime);
-console.log(totalMinutes);
-const shiftMinutesPer = totalMinutes / amount;
-const shiftCal = Math.ceil(shiftMinutesPer/5)
-console.log(shiftCal * 5 , Math.ceil(10.1))
-const shiftMinutes = shiftCal * 5;
-const numberOfShifts = Math.ceil(totalMinutes / shiftMinutes);
-
-// Shuffle soldiers for random assignment
-const shuffledSoldiers = shuffleArray([...availableSoldiers]);
-
-currentSchedule = []; // Reset current schedule
-nameDict = {};
-let currentMinutes = parseTime(startTime);
-let numOfEmpty = amount - availableSoldiers.length;
-let flag = startOption;
-
-console.log(numberOfShifts , numOfEmpty)
-for (let i = 0; i < numberOfShifts; i++) {
-    const shiftEndMinutes = Math.min(currentMinutes + shiftMinutes, parseTime(startTime) + totalMinutes);
-    const soldier = shuffledSoldiers[i % shuffledSoldiers.length];
-    if (!flag && !onlyUs){
-        currentSchedule.push({
-        shift: `${formatTime(shiftEndMinutes)} - ${formatTime(currentMinutes)}`,
-        soldier: '-',});
-        numOfEmpty--;
-    }
-    else if(flag){
-        if(!onlyUs && soldier.name in nameDict){
-        soldier.name = '-';
-        }
-        nameDict[soldier.name] = i;
-        currentSchedule.push({
-        shift: `${formatTime(shiftEndMinutes)} - ${formatTime(currentMinutes)}`,
-        soldier: soldier.name,});
-    }
-
-    if (numOfEmpty == 0) {
-        flag = true;
-    }
-
-    currentMinutes = shiftEndMinutes;
-    }
-
-    const shiftDiv = document.getElementById('perShift');
-    shiftDiv.innerHTML = `<li>${shiftMinutes} minutes per shift</li>`;
-
-    // Display schedule
-    const scheduleDiv = document.getElementById('schedule');
-    scheduleDiv.innerHTML = '<h2>Generated Schedule</h2>';
-
-    currentSchedule.forEach(shift => {
-    scheduleDiv.innerHTML += `
-        <div class="shift">
-            <div class="shift-header">
-                <span>${shift.shift}</span>
-            </div>
-            <div>${shift.soldier}</div>
-        </div>
-    `;
-    });
-
-    // Show copy button
-    document.getElementById('copyButton').style.display = 'inline-block';
-}
-nameDict = {}
-function copySchedule() {
-if (currentSchedule.length === 0) return;
-
-// Format schedule as text
-const scheduleText = currentSchedule.map(shift => 
-`${shift.soldier} - ${shift.shift}`
-).join('\n');
-
-// Copy to clipboard
-navigator.clipboard.writeText(scheduleText).then(() => {
-// Show toast notification
-const toast = document.getElementById('toast');
-toast.style.display = 'block';
-
-// Hide toast after 2 seconds
-setTimeout(() => {
-    toast.style.display = 'none';
-}, 2000);
-}).catch(err => {
-console.error('Failed to copy:', err);
-alert('Failed to copy schedule to clipboard');
+  // טען זמינות (כולל רענון ראשוני של המסכים)
+  loadAvailabilityForToday(false);
 });
 
+/* ---------- רנדר קבוצות ---------- */
+function renderGroups(){
+  el.groupsContainer.innerHTML = '';
+  Object.keys(GROUPS).forEach(groupName => {
+    const id = 'g_' + groupName;
+    const wrap = document.createElement('label');
+    wrap.className = 'chip';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.id = id;
+    cb.checked = state.selectedGroups.has(groupName);
+    cb.addEventListener('change', () => {
+      if (cb.checked) state.selectedGroups.add(groupName);
+      else state.selectedGroups.delete(groupName);
+      renderAll();
+    });
+    const span = document.createElement('span');
+    span.textContent = groupName;
+
+    wrap.appendChild(cb);
+    wrap.appendChild(span);
+    el.groupsContainer.appendChild(wrap);
+  });
 }
 
-// ===== Availability (no inputs) =====
-// הגדרות הגיליון שלך
-const SHEET_ID   = '1NnKw1bWpokAA8Qq-0D9r_Sp1o9jcF-EwQhi8sJvIHJw';
-const SHEET_TAB  = 'Calander'; // שים לב לאיות הלשונית אצלך
-const CSV_URL    = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_TAB)}`;
+/* ---------- רנדר כללי לפי מצב נוכחי ---------- */
+function renderAll(){
+  const roster = getRosterFromSelectedGroups();
+  renderRoster(roster);
 
-// parsing בסיסי ל-CSV (ללא ציטוטים מקוננים)
-function simpleCsvParse(text) {
-  return text
-    .trim()
-    .split(/\r?\n/)
-    .map(line => line.split(','));
+  if (!state.availabilityLoaded){
+    setStatus('ממתין לזמינות מהגיליון...');
+    return;
+  }
+
+  const {availableNames, unavailableList} = intersectRosterWithAvailability(roster);
+  renderAvailabilityLists(availableNames, unavailableList);
+  setStatus('הכל מעודכן.');
 }
 
-// dd/mm/yyyy -> Date (ללא זמן)
-function parseDDMMYYYY(str) {
-  const m = String(str).match(/^(\d{1,2})[\/\.](\d{1,2})[\/\.](\d{4})$/);
-  if (!m) return null;
-  const dd = +m[1], mm = +m[2], yyyy = +m[3];
-  return new Date(yyyy, mm - 1, dd);
-}
-function normalizeDateOnly(d) {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-}
-function sameDate(a, b) {
-  return a.getFullYear() === b.getFullYear() &&
-         a.getMonth() === b.getMonth() &&
-         a.getDate() === b.getDate();
+/* איחוד חיילים מכל הקבוצות הנבחרות (ללא כפילויות) */
+function getRosterFromSelectedGroups(){
+  const names = [];
+  for (const g of state.selectedGroups){
+    const arr = GROUPS[g] || [];
+    names.push(...arr);
+  }
+  // ייחוד + ניקוי ריקים
+  return Array.from(new Set(names.map(s => (s||'').trim()).filter(Boolean)));
 }
 
-// הוצאת זמינות מתוך ה-CSV לפי תאריך מסוים (היום)
-function computeAvailabilityFromCsv(csvRows, targetDate) {
-  if (!csvRows.length) return { available: [], unavailable: [] };
+/* הצגת הרשימה הגולמית מהקבוצות */
+function renderRoster(roster){
+  el.rosterList.innerHTML = '';
+  if (!roster.length){
+    el.rosterList.innerHTML = `<li class="note">לא נבחרו קבוצות.</li>`;
+    return;
+  }
+  for (const name of roster){
+    const li = document.createElement('li');
+    li.textContent = name;
+    el.rosterList.appendChild(li);
+  }
+}
 
-  const header = csvRows[0]; // שורת תאריכים
-  const target = normalizeDateOnly(targetDate);
-
-  // מצא את אינדקס העמודה של התאריך (B..)
-  let colIdx = -1;
-  for (let c = 1; c < header.length; c++) {
-    const asDate = parseDDMMYYYY(header[c]);
-    if (asDate && sameDate(normalizeDateOnly(asDate), target)) {
-      colIdx = c;
-      break;
+/* חיתוך רשימת הקבוצות מול זמינות היום */
+function intersectRosterWithAvailability(roster){
+  const availableNames = [];
+  const unavailableList = [];
+  for (const name of roster){
+    if (state.availableSet.has(name)) {
+      availableNames.push(name);
+    } else if (state.unavailableMap.has(name)) {
+      unavailableList.push({ name, note: state.unavailableMap.get(name) });
+    } else {
+      // אם לא מופיע לא בזמינים ולא בלא-זמינים — משמע שלא נמצא בגיליון: נציג כאזהרה "לא נמצא בגיליון"
+      unavailableList.push({ name, note: 'לא נמצא בגיליון' });
     }
   }
-  if (colIdx === -1) {
-    throw new Error('לא נמצאה עמודת תאריך בכותרת עבור ' + targetDate.toLocaleDateString('he-IL'));
-  }
-
-  const available = [];
-  const unavailable = [];
-  for (let r = 1; r < csvRows.length; r++) {
-    const row  = csvRows[r];
-    const name = (row[0] || '').trim();
-    if (!name) continue;
-    const cell = (row[colIdx] || '').trim();
-    if (cell === '') available.push(name);
-    else unavailable.push({ name, note: cell });
-  }
-  return { available, unavailable };
+  return { availableNames, unavailableList };
 }
 
-// טען זמינות להיום, שמור גלובאלית, ועדכן תצוגה
-async function loadAvailabilityForToday() {
-  const today = new Date();
-  try {
-    const res = await fetch(CSV_URL, { cache: 'no-store' });
+/* הצגת זמינים/לא-זמינים */
+function renderAvailabilityLists(availableNames, unavailableList){
+  el.availableList.innerHTML = '';
+  el.unavailableList.innerHTML = '';
+
+  if (!availableNames.length){
+    el.availableList.innerHTML = `<li class="note">—</li>`;
+  } else {
+    for (const n of availableNames){
+      const li = document.createElement('li');
+      li.textContent = n;
+      el.availableList.appendChild(li);
+    }
+  }
+
+  if (!unavailableList.length){
+    el.unavailableList.innerHTML = `<li class="note">—</li>`;
+  } else {
+    for (const u of unavailableList){
+      const li = document.createElement('li');
+      li.textContent = u.name + (u.note ? ' — ' + u.note : '');
+      el.unavailableList.appendChild(li);
+    }
+  }
+}
+
+/* ---------- טעינת זמינות מה-CSV של הגיליון ---------- */
+async function loadAvailabilityForToday(forceLog){
+  setStatus('טוען זמינות מהגיליון...');
+  try{
+    const res = await fetch(CSV_URL, { cache:'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const text = await res.text();
-    const rows = simpleCsvParse(text);
+    const rows = parseCSV(text);
 
-    const { available, unavailable } = computeAvailabilityFromCsv(rows, today);
+    const { availableSet, unavailableMap } = computeAvailabilityFromCsv(rows, state.today);
+    state.availableSet = availableSet;
+    state.unavailableMap = unavailableMap;
+    state.availabilityLoaded = true;
 
-    // נשמור כ-Set כדי לסנן לפי group בשיבוץ
-    window.__AvailNames = new Set(available);
-
-    // רענון פאנל התצוגה (אם קיים ב-HTML)
-    renderAvailabilityPanel(available, unavailable, today);
-  } catch (err) {
-    console.error('Load availability failed:', err);
-    // לא חוסם את המערכת – פשוט אין סינון זמינות
-    window.__AvailNames = null;
+    if (forceLog) {
+      setStatus(`נטענו נתוני זמינות (${availableSet.size} זמינים, ${unavailableMap.size} לא-זמינים/לא נמצאו).`);
+    } else {
+      setStatus('זמינות נטענה בהצלחה.');
+    }
+  } catch (err){
+    console.error(err);
+    setStatus('שגיאת טעינה: ' + err.message + '\nודא שהגיליון משותף לצפייה וששם הלשונית נכון (Calander).');
+    state.availabilityLoaded = false; // כדי שנדע שלא ניתן להצליב כרגע
   }
+  renderAll();
 }
 
-function renderAvailabilityPanel(available, unavailable, dateObj) {
-  const aUl = document.getElementById('availableList');
-  const uUl = document.getElementById('unavailableList');
-  const title = document.getElementById('availabilityDate');
-  if (!aUl || !uUl || !title) return; // אם אין פאנל, דלג
+/* ---------- CSV parser מינימלי עם תמיכה במירכאות ---------- */
+function parseCSV(text){
+  const rows = [];
+  let row = [];
+  let field = '';
+  let inQuotes = false;
 
-  title.textContent = dateObj.toLocaleDateString('he-IL');
-  aUl.innerHTML = '';
-  uUl.innerHTML = '';
+  for (let i=0; i<text.length; i++){
+    const ch = text[i];
 
-  if (available.length === 0) aUl.innerHTML = '<li>—</li>';
-  else for (const n of available) { const li=document.createElement('li'); li.textContent=n; aUl.appendChild(li); }
+    if (inQuotes){
+      if (ch === '"'){
+        // בדוק אם זה "" (escaped quote)
+        if (i+1 < text.length && text[i+1] === '"'){
+          field += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        field += ch;
+      }
+    } else {
+      if (ch === '"'){
+        inQuotes = true;
+      } else if (ch === ','){
+        row.push(field);
+        field = '';
+      } else if (ch === '\r'){
+        // דלג
+      } else if (ch === '\n'){
+        row.push(field);
+        rows.push(row);
+        row = [];
+        field = '';
+      } else {
+        field += ch;
+      }
+    }
+  }
+  // סיום קובץ – הוסף את השדה/שורה האחרונה
+  if (field.length > 0 || inQuotes || row.length > 0){
+    row.push(field);
+    rows.push(row);
+  }
 
-  if (unavailable.length === 0) uUl.innerHTML = '<li>—</li>';
-  else for (const u of unavailable) { const li=document.createElement('li'); li.textContent = u.name + (u.note ? ' — ' + u.note : ''); uUl.appendChild(li); }
+  // ניקוי שורות ריקות בקצה
+  return rows.filter(r => r.some(c => String(c).trim().length > 0));
 }
 
-// טען זמינות מיד כשהדף מוכן
-document.addEventListener('DOMContentLoaded', () => {
-  loadAvailabilityForToday();
-});
+/* ---------- לוגיקת פרשנות זמינות מתוך ה-CSV ---------- */
+function computeAvailabilityFromCsv(csvRows, targetDate){
+  if (!csvRows.length) return { availableSet:new Set(), unavailableMap:new Map() };
 
+  const header = csvRows[0]; // שורת הכותרת – תאריכים בעמודות B.. (עמודה A = שמות)
+  const target = normalizeDateOnly(targetDate);
+
+  // מצא אינדקס עמודת התאריך
+  const colIdx = findDateColumnIndex(header, target);
+  if (colIdx === -1){
+    throw new Error(`לא נמצאה עמודת תאריך מתאימה לכותרת (${formatDateIL(target)}).`);
+  }
+
+  const availableSet = new Set();
+  const unavailableMap = new Map();
+
+  for (let r = 1; r < csvRows.length; r++){
+    const row = csvRows[r];
+    const name = (row[0] || '').trim();
+    if (!name) continue;
+
+    // הערך באותה עמודה (אותו תאריך)
+    const cell = (row[colIdx] || '').trim();
+    if (cell === ''){
+      availableSet.add(name);
+    } else {
+      unavailableMap.set(name, cell);
+    }
+  }
+  return { availableSet, unavailableMap };
+}
+
+/* נסיון התאמה גמיש לכותרת תאריך: תומך dd/mm/yy, dd/mm/yyyy, גם נקודות/מקף */
+function findDateColumnIndex(headerRow, targetDate){
+  for (let c = 1; c < headerRow.length; c++){
+    const str = String(headerRow[c]).trim();
+    const d = parseDateFlexible(str);
+    if (d && sameDate(normalizeDateOnly(d), targetDate)) {
+      return c;
+    }
+  }
+  return -1;
+}
+
+function parseDateFlexible(s){
+  // תומך: 8/9/25 | 08/09/2025 | 8.9.25 | 8-9-2025
+  const m = String(s).match(/^(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{2}|\d{4})$/);
+  if (!m) return null;
+  let dd = +m[1], mm = +m[2], yy = +m[3];
+  if (yy < 100) yy += 2000; // "25" => 2025
+  return new Date(yy, mm - 1, dd);
+}
+
+/* ---------- עזרים ---------- */
+function normalizeDateOnly(d){
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+function sameDate(a,b){
+  return a.getFullYear() === b.getFullYear()
+      && a.getMonth() === b.getMonth()
+      && a.getDate() === b.getDate();
+}
+function formatDateIL(d){
+  // דיוק ל-IL: dd.mm.yyyy
+  const pad = n => n.toString().padStart(2,'0');
+  return `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`;
+}
+function setStatus(msg){
+  if (!el.statusBox) return;
+  el.statusBox.textContent = msg;
+}
