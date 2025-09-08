@@ -146,9 +146,13 @@ alert('Failed to copy schedule to clipboard');
 
 }
 
-// ===== Availability from Calendar CSV =====
+// ===== Availability (no inputs) =====
+// הגדרות הגיליון שלך
+const SHEET_ID   = '1NnKw1bWpokAA8Qq-0D9r_Sp1o9jcF-EwQhi8sJvIHJw';
+const SHEET_TAB  = 'Calander'; // שים לב לאיות הלשונית אצלך
+const CSV_URL    = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_TAB)}`;
 
-// עוזר: פרסינג של CSV מינימלי (תומך בפסיקים, ללא גרשיים מקוננים)
+// parsing בסיסי ל-CSV (ללא ציטוטים מקוננים)
 function simpleCsvParse(text) {
   return text
     .trim()
@@ -156,38 +160,31 @@ function simpleCsvParse(text) {
     .map(line => line.split(','));
 }
 
-// עוזר: פרש תאריך תצוגה dd/mm/yyyy -> Date ללא זמן
+// dd/mm/yyyy -> Date (ללא זמן)
 function parseDDMMYYYY(str) {
   const m = String(str).match(/^(\d{1,2})[\/\.](\d{1,2})[\/\.](\d{4})$/);
   if (!m) return null;
   const dd = +m[1], mm = +m[2], yyyy = +m[3];
   return new Date(yyyy, mm - 1, dd);
 }
-
 function normalizeDateOnly(d) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
-
 function sameDate(a, b) {
   return a.getFullYear() === b.getFullYear() &&
          a.getMonth() === b.getMonth() &&
          a.getDate() === b.getDate();
 }
 
-/**
- * מוציא זמינות מתוך CSV:
- * שורה 1 – תאריכים (B..)
- * עמודה A – שמות (A2..)
- * אם התא באותו התאריך ריק -> זמין; אחרת -> לא זמין (הטקסט = הערה/סיבה)
- */
+// הוצאת זמינות מתוך ה-CSV לפי תאריך מסוים (היום)
 function computeAvailabilityFromCsv(csvRows, targetDate) {
   if (!csvRows.length) return { available: [], unavailable: [] };
 
-  const header = csvRows[0]; // שורה 1
-  // מצא אינדקס של התאריך בעמודות הכותרת (מתחילים מ-B => index 1)
-  let colIdx = -1;
+  const header = csvRows[0]; // שורת תאריכים
   const target = normalizeDateOnly(targetDate);
 
+  // מצא את אינדקס העמודה של התאריך (B..)
+  let colIdx = -1;
   for (let c = 1; c < header.length; c++) {
     const asDate = parseDDMMYYYY(header[c]);
     if (asDate && sameDate(normalizeDateOnly(asDate), target)) {
@@ -201,82 +198,59 @@ function computeAvailabilityFromCsv(csvRows, targetDate) {
 
   const available = [];
   const unavailable = [];
-
-  // החל משורה 2 – שמות וערכי תא
   for (let r = 1; r < csvRows.length; r++) {
-    const row = csvRows[r];
+    const row  = csvRows[r];
     const name = (row[0] || '').trim();
     if (!name) continue;
-
     const cell = (row[colIdx] || '').trim();
-    if (cell === '') {
-      available.push(name);
-    } else {
-      unavailable.push({ name, note: cell });
-    }
+    if (cell === '') available.push(name);
+    else unavailable.push({ name, note: cell });
   }
-
   return { available, unavailable };
 }
 
-/**
- * טען CSV מה־URL וחשב זמינות לתאריך מהשדה #availDate
- * פורמט תאריך נדרש: dd/mm/yyyy (כמו בשורת הכותרת בגיליון)
- */
-async function loadAvailability() {
-  const csvUrl = document.getElementById('csvUrl').value.trim();
-  const dateStr = document.getElementById('availDate').value.trim();
-  if (!csvUrl) {
-    alert('נא להזין קישור CSV של הגיליון (דרך "פרסום לאינטרנט")');
-    return;
-  }
-  if (!dateStr) {
-    alert('נא להזין תאריך בפורמט dd/mm/yyyy (לדוגמה 08/09/2025)');
-    return;
-  }
-  const d = parseDDMMYYYY(dateStr);
-  if (!d) {
-    alert('פורמט תאריך לא תקין. דוגמה: 08/09/2025');
-    return;
-  }
-
+// טען זמינות להיום, שמור גלובאלית, ועדכן תצוגה
+async function loadAvailabilityForToday() {
+  const today = new Date();
   try {
-    const res = await fetch(csvUrl, { cache: 'no-store' });
+    const res = await fetch(CSV_URL, { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const text = await res.text();
     const rows = simpleCsvParse(text);
 
-    const { available, unavailable } = computeAvailabilityFromCsv(rows, d);
-    renderAvailability(available, unavailable);
+    const { available, unavailable } = computeAvailabilityFromCsv(rows, today);
+
+    // נשמור כ-Set כדי לסנן לפי group בשיבוץ
+    window.__AvailNames = new Set(available);
+
+    // רענון פאנל התצוגה (אם קיים ב-HTML)
+    renderAvailabilityPanel(available, unavailable, today);
   } catch (err) {
-    console.error(err);
-    alert('כשל בטעינת ה־CSV או בעיבוד הנתונים: ' + err.message);
+    console.error('Load availability failed:', err);
+    // לא חוסם את המערכת – פשוט אין סינון זמינות
+    window.__AvailNames = null;
   }
 }
 
-function renderAvailability(available, unavailable) {
+function renderAvailabilityPanel(available, unavailable, dateObj) {
   const aUl = document.getElementById('availableList');
   const uUl = document.getElementById('unavailableList');
+  const title = document.getElementById('availabilityDate');
+  if (!aUl || !uUl || !title) return; // אם אין פאנל, דלג
+
+  title.textContent = dateObj.toLocaleDateString('he-IL');
   aUl.innerHTML = '';
   uUl.innerHTML = '';
 
-  if (!available.length) {
-    aUl.innerHTML = '<li>—</li>';
-  } else {
-    for (const n of available) {
-      const li = document.createElement('li');
-      li.textContent = n;
-      aUl.appendChild(li);
-    }
-  }
+  if (available.length === 0) aUl.innerHTML = '<li>—</li>';
+  else for (const n of available) { const li=document.createElement('li'); li.textContent=n; aUl.appendChild(li); }
 
-  if (!unavailable.length) {
-    uUl.innerHTML = '<li>—</li>';
-  } else {
-    for (const u of unavailable) {
-      const li = document.createElement('li');
-      li.textContent = u.name + (u.note ? ' — ' + u.note : '');
-      uUl.appendChild(li);
-    }
-  }
+  if (unavailable.length === 0) uUl.innerHTML = '<li>—</li>';
+  else for (const u of unavailable) { const li=document.createElement('li'); li.textContent = u.name + (u.note ? ' — ' + u.note : ''); uUl.appendChild(li); }
 }
+
+// טען זמינות מיד כשהדף מוכן
+document.addEventListener('DOMContentLoaded', () => {
+  loadAvailabilityForToday();
+});
+
