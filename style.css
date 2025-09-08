@@ -1,0 +1,124 @@
+body {
+    font-family: Arial, sans-serif;
+    max-width: 900px;
+    margin: 20px auto;
+    padding: 20px;
+}
+
+.container {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.groups {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.group {
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.group-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.inputs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+}
+
+label {
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+input {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+button {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #0056b3;
+}
+
+#schedule {
+    margin-top: 20px;
+}
+
+.shift {
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+}
+
+.shift-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.group-name {
+    color: #666;
+}
+/* Add these to your existing styles */
+.button-group {
+display: flex;
+gap: 10px;
+margin-bottom: 20px;
+}
+
+.copy-button {
+background: #28a745;
+}
+
+.copy-button:hover {
+background: #218838;
+}
+
+.toast {
+position: fixed;
+bottom: 20px;
+right: 20px;
+background: #28a745;
+color: white;
+padding: 10px 20px;
+border-radius: 4px;
+display: none;
+animation: fadeInOut 2s ease;
+}
+
+@keyframes fadeInOut {
+0% { opacity: 0; }
+10% { opacity: 1; }
+90% { opacity: 1; }
+100% { opacity: 0; }
+}
